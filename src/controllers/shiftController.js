@@ -1,9 +1,10 @@
-import Shift from '../models/Shift.js';
-import User from '../models/User.js';
+import Notification from "../models/Notification.js";
+import Shift from "../models/Shift.js";
+import User from "../models/User.js";
 
 export const createShift = async (req, res) => {
   try {
-    const { user, date, startTime, endTime, role, employee,title } = req.body;
+    const { user, date, startTime, endTime, role, employee, title } = req.body;
 
     const shift = await Shift.create({
       user,
@@ -15,6 +16,12 @@ export const createShift = async (req, res) => {
       employee,
       location: role, // assuming role is used as location or you can update the model
     });
+      const notification = await Notification.create({
+      user: employee,
+      message: `A new shift has been assigned: ${title} on ${date}`,
+    });
+
+    notification.save();
 
     res.status(201).json({ success: true, shift });
   } catch (error) {
@@ -35,9 +42,10 @@ export const getUserShifts = async (req, res) => {
 
 export const getAllShifts = async (req, res) => {
   try {
-    const shifts = await Shift.find().populate('user');
+    const shifts = await Shift.find().populate("user");
     res.status(200).json({ success: true, shifts });
   } catch (error) {
+    console.error("Error fetching shifts:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -46,10 +54,10 @@ export const getAllShifts = async (req, res) => {
 export const getMyShifts = async (req, res) => {
   console.log(req.user);
   try {
-    const id=req.user._id.toString();
+    const id = req.user._id.toString();
     const userId = id;
-    console.log("UI",userId);
-    const shifts = await Shift.find({ employee: userId })
+    console.log("UI", userId);
+    const shifts = await Shift.find({ employee: userId });
     res.status(200).json({ success: true, shifts });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

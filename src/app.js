@@ -4,8 +4,11 @@ import authRoute from './routes/authRoutes.js';
 import shiftRoute from './routes/shiftRoutes.js';
 import notificationRoute from './routes/notificationRoutes.js';
 import swapRequestRoute from './routes/swapRequest.route.js';
-import http from "http"; // Needed to attach socket to HTTP server
-import { Server } from "socket.io";
+import path from "path";
+import { dirname } from "path";
+import { fileURLToPath } from "url";
+import { isAuthenticated } from './middlewares/authMiddleware.js';
+
 
 
 const app = express();
@@ -38,30 +41,23 @@ app.use("/api", notificationRoute); // <-- New route
 
 app.use("/api", swapRequestRoute); // <-- New route
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+app.get("/api/user/download",isAuthenticated, (req, res) => {
+  console.log("Download request received");
+  const filePath = path.join(__dirname, "../assets/report.pdf");
 
-const server = http.createServer(app); // Attach express to HTTP server
-
-const io = new Server(server, {
-  cors: {
-    origin: "*", // Or your frontend URL
-    methods: ["GET", "POST"],
-  },
-});
-
-io.on("connection", (socket) => {
-  console.log("New client connected: bittu", socket.id);
-
-  socket.on("disconnect", () => {
-    console.log("Client disconnected:", socket.id);
+  res.download(filePath, "ShiftSwap_Report.pdf", (err) => {
+    if (err) {
+      console.error("Download error:", err);
+      res.status(500).json({ error: "Failed to download report" });
+    }
   });
-});
-
-const PORT = process.env.PORT || 8080;
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+})
 
 
 
 
-export  {io,app};
+
+
+export  {app};

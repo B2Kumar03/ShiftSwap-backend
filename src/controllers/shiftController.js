@@ -42,7 +42,8 @@ export const getUserShifts = async (req, res) => {
 
 export const getAllShifts = async (req, res) => {
   try {
-    const shifts = await Shift.find().populate("user");
+    const shifts = await Shift.find().populate("employee");
+    console.log("shifts", shifts);
     res.status(200).json({ success: true, shifts });
   } catch (error) {
     console.error("Error fetching shifts:", error);

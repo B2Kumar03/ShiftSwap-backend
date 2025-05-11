@@ -62,19 +62,32 @@ export const volunteerForSwap = async (req, res) => {
 
 // Approve a volunteer (by manager)
 export const approveSwap = async (req, res) => {
+  return
   try {
     const { requestId } = req.params;
     console.log(requestId);
+
     const swap = await SwapRequest.findById(requestId);
     console.log(swap);
-    if (!swap) return res.status(404).json({ success: false, message: 'Swap request not found' });
 
-    
+    if (!swap) {
+      return res.status(404).json({ success: false, message: 'Swap request not found' });
+    }
 
+    // Update swap request status
     swap.status = 'approved';
     await swap.save();
 
-    // Send notifications to requester and volunteer
+    // Update the shift's employee to the volunteer
+    const shift = await Shift.findById(swap.shift);
+    if (!shift) {
+      return res.status(404).json({ success: false, message: 'Shift not found' });
+    }
+
+    shift.employee = swap.volunteer;
+    await shift.save();
+
+    // Create notifications
     await Notification.insertMany([
       {
         message: 'Your shift swap request was approved.',
@@ -85,8 +98,8 @@ export const approveSwap = async (req, res) => {
       },
       {
         message: 'You have been approved for a shift swap.',
-        recipient: swap.volunteer,
         user: req.user._id,
+        recipient: swap.volunteer,
         date: new Date().toISOString().split('T')[0],
         time: new Date().toLocaleTimeString()
       }
@@ -97,6 +110,7 @@ export const approveSwap = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
 
 // Reject a swap request
 export const rejectSwap = async (req, res) => {
